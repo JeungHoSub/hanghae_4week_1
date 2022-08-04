@@ -7,6 +7,8 @@ const authMiddleware = require("./middlewares/auth-middleware");
 const app = express();
 const router = express.Router();
 
+
+//회원가입 
 router.post("/signup", async (req, res) => {
   const { nickname, email, password, confirmPassword } = req.body;
 
@@ -120,7 +122,7 @@ router.get("/:_postId", async (req, res) => {
             postId,
         }
     });
-});
+
 
 if (!existPost) {
     res.stauts(400).send({
@@ -172,7 +174,7 @@ if (!existPost) {
             }
         });
     }  
-
+  });
 
 //개시글 생성
 router.post("/", authMiddleware, async (req, res) => {
@@ -190,7 +192,7 @@ router.post("/", authMiddleware, async (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({
-        reult: { 
+        result: { 
             success: false,
             error
         }
@@ -317,7 +319,9 @@ router.get("/:_postId", async (req, res) => {
       return;
     }
 
-    const comments = await Comment.find({ postId: _id }).sort({ createdAt: -1 });
+    const comments = await Comment.findAll({ 
+      order:[['createdAt', 'DESC']]
+    });
 
     let resultList = [];
 
@@ -339,7 +343,7 @@ router.get("/:_postId", async (req, res) => {
 });
 
 //댓글 생성
-router.post("/:_postId", async (req, res) => {
+router.post("/:_postId", authMiddleware, async (req, res) => {
   try {
     const _id = req.params._postId;
 
@@ -392,7 +396,12 @@ router.put("/:_commentId", async (req, res) => {
       return;
     }
 
-    await Comment.updateOne({ _id }, { $set: { content } });
+    await Comment.updateOne({
+      where: {
+          postId,
+          content
+    },
+  });
 
     res.status(201).json({ message: "댓글을 수정하였습니다." });
   } catch (error) {
@@ -413,7 +422,13 @@ router.delete("/:_commentId", async (req, res) => {
       return;
     }
 
-    const isExist = await Comment.findOne({ _id, password });
+    const isExist = await Comment.findOne({ 
+      where: {
+          _id, 
+          password
+      },
+
+     });
 
     if (!isExist || !_id) {
       res.status(404).json({ message: '댓글 조회에 실패하였습니다.' });
